@@ -79,13 +79,16 @@ namespace BunqClientLight
 
         public async Task SetupSession()
         {
-            var (token, userPerson) = await PostJsonAsync<Token, UserPerson>(
+            var (token, userPerson, userCompany) = await PostJsonAsync<Token, UserPerson, UserCompany>(
                 "session-server",
-                "Token", "UserPerson",
+                "Token", "UserPerson", "UserCompany",
                 new { secret = apiKey },
                 installationToken);
 
-            session = new Session(userPerson.id, token.token, userPerson.session_timeout);
+            var userId = userPerson?.id ?? userCompany.id;
+            var session_timeout = userPerson?.session_timeout ?? userCompany.session_timeout;
+
+            session = new Session(userId, token.token, session_timeout);
         }
 
         public Task<MonetaryAccountBank[]> ListMonetaryAccountBanks()
@@ -141,10 +144,10 @@ namespace BunqClientLight
             return await response.FromBunqJson<T>(wrapperTag);
         }
 
-        private async Task<(T1,T2)> PostJsonAsync<T1, T2>(string url, string wrapperTag1, string wrapperTag2, object data, string token = null)
+        private async Task<(T1, T2, T3)> PostJsonAsync<T1, T2, T3>(string url, string wrapperTag1, string wrapperTag2, string wrapperTag3, object data, string token = null)
         {
             var response = await Send(HttpMethod.Post, url, data, token);
-            return await response.FromBunqJson<T1, T2>(wrapperTag1, wrapperTag2);
+            return await response.FromBunqJson<T1, T2, T3>(wrapperTag1, wrapperTag2, wrapperTag3);
         }
 
         private async Task<HttpResponseMessage> Send(HttpMethod httpMethod, string url, object data = null, string token = null)
@@ -273,6 +276,15 @@ namespace BunqClientLight
             var data1 = responseObject.Deserialize<T1>(wrapperTag1);
             var data2 = responseObject.Deserialize<T2>(wrapperTag2);
             return (data1, data2);
+        }
+
+        public static async Task<(T1, T2, T3)> FromBunqJson<T1, T2, T3>(this HttpResponseMessage response, string wrapperTag1, string wrapperTag2, string wrapperTag3)
+        {
+            var responseObject = await response.GetResponse();
+            var data1 = responseObject.Deserialize<T1>(wrapperTag1);
+            var data2 = responseObject.Deserialize<T2>(wrapperTag2);
+            var data3 = responseObject.Deserialize<T3>(wrapperTag3);
+            return (data1, data2, data3);
         }
 
         private static T Deserialize<T>(this JsonElement[] array, string wrapperTag)

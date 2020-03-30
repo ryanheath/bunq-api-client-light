@@ -21,6 +21,12 @@ namespace BunqClientLight.BunqModels
         public int session_timeout { get; set; }
     }
 
+    public class UserCompany
+    {
+        public long id { get; set; }
+        public int session_timeout { get; set; }
+    }
+
     public class MonetaryAccountBank
     {
         public long id { get; set; }
